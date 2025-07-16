@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./ChatInput.css";
 
 const ChatInput = ({ onSubmit, disabled = false, placeholder = "Ask me anything..." }) => {
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef(null);
 
   const handleSubmit = async () => {
     if (question.trim() && !disabled && !isLoading) {
@@ -26,15 +27,21 @@ const ChatInput = ({ onSubmit, disabled = false, placeholder = "Ask me anything.
     }
   };
 
+  // Auto-focus input when not loading
+  useEffect(() => {
+    if (inputRef.current && !isLoading) {
+      inputRef.current.focus();
+    }
+  }, [isLoading]);
+
   return (
     <div className="chat-input-container">
       <div className="chat-input-form">
         <div className="input-group">
-          <label htmlFor="question" className="input-label">
-            Ask a Question
-          </label>
+          
           <div className="input-wrapper">
             <input
+              ref={inputRef}
               type="text"
               className={`chat-input ${disabled ? 'disabled' : ''}`}
               id="question"
@@ -60,8 +67,11 @@ const ChatInput = ({ onSubmit, disabled = false, placeholder = "Ask me anything.
               )}
             </button>
           </div>
-          <div className="character-count">
-            {question.length}/500
+          <div className="input-footer">
+            <span className="input-hint">Press Enter to send, Shift+Enter for new line</span>
+            <div className={`character-count ${question.length > 450 ? 'warning' : ''}`}>
+              {question.length}/500
+            </div>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import "./ChatResponse.css";
 const ChatResponse = ({ response, loading = false, error = null }) => {
   const [expandedCandidates, setExpandedCandidates] = useState(new Set());
   const [showMetadata, setShowMetadata] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const toggleCandidate = (index) => {
     const newExpanded = new Set(expandedCandidates);
@@ -18,9 +19,23 @@ const ChatResponse = ({ response, loading = false, error = null }) => {
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
-      // Could add toast notification here
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error('Failed to copy text: ', err);
+      // Fallback for older browsers
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (fallbackError) {
+        console.error('Fallback copy failed:', fallbackError);
+      }
     }
   };
 
@@ -61,6 +76,10 @@ const ChatResponse = ({ response, loading = false, error = null }) => {
           <div className="error-icon">⚠️</div>
           <h3 className="error-title">Error</h3>
           <p className="error-message">{error}</p>
+          <details className="error-details">
+            <summary>Show technical details</summary>
+            <pre className="error-technical">{error}</pre>
+          </details>
         </div>
       </div>
     );
@@ -101,14 +120,20 @@ const ChatResponse = ({ response, loading = false, error = null }) => {
                 </h5>
                 <div className="candidate-actions">
                   <button
-                    className="action-btn copy-btn"
+                    className={`action-btn copy-btn ${copySuccess ? 'success' : ''}`}
                     onClick={() => copyToClipboard(text)}
                     title="Copy to clipboard"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
+                    {copySuccess ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    )}
                   </button>
                   {hasMore && (
                     <button

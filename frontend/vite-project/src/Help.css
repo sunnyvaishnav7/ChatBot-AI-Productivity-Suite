@@ -1,0 +1,80 @@
+.help-container {
+  max-width: 700px;
+  margin: 60px auto 0 auto;
+  padding: 2rem 2.5rem 3rem 2.5rem;
+  background: #18181b;
+  color: #f3f3f7;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px 0 #000a  ;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  line-height: 1.7;
+  max-height: 80vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #23232b #18181b;
+}
+
+.help-container::-webkit-scrollbar {
+  width: 8px;
+  background: #18181b;
+}
+.help-container::-webkit-scrollbar-thumb {
+  background: #23232b;
+  border-radius: 8px;
+}
+
+.help-container h1 {
+  font-size: 2.2rem;
+  margin-bottom: 1.2rem;
+  color: #fff;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.help-section {
+  margin-bottom: 2.2rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid #23232b;
+}
+
+.help-section:last-child {
+  border-bottom: none;
+}
+
+.help-section h2 {
+  color: #7ee787;
+  font-size: 1.25rem;
+  margin-bottom: 0.7rem;
+  margin-top: 0.5rem;
+}
+
+.help-section ul, .help-section ol {
+  margin-left: 1.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.help-section li {
+  margin-bottom: 0.5rem;
+}
+
+.help-section strong {
+  color: #fff;
+}
+
+.help-section em {
+  color: #7ee787;
+  font-style: normal;
+}
+
+@media (max-width: 600px) {
+  .help-container {
+    padding: 1rem 0.5rem 2rem 0.5rem;
+    max-width: 98vw;
+  }
+  .help-container h1 {
+    font-size: 1.4rem;
+  }
+  .help-section h2 {
+    font-size: 1.05rem;
+  }
+} 
