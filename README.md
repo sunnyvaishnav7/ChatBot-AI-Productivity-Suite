@@ -82,4 +82,4 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Credits
 - Inspired by Google Meet, ChatGPT, and modern productivity tools.
-- Built with ❤️ by [Your Name].
+- Built with ❤️ by Sunny Vaishnav.
