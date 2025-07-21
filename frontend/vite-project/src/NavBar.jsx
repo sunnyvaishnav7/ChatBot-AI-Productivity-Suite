@@ -1,23 +1,36 @@
 import React, { useState } from 'react';
-import { MessageCircle, Settings, User, Menu, X, Bot, History, HelpCircle, StickyNote } from 'lucide-react';
+import { MessageCircle, Settings, User, Menu, X, Bot, History, HelpCircle, StickyNote, Sun, Moon } from 'lucide-react';
 import './Navbar.css';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
+  const [showSettings, setShowSettings] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Accept both tab and path
   const handleTabClick = (tab, path) => {
     setActiveTab(tab);
     setIsMenuOpen(false);
     navigate(path);
   };
+
+  const handleThemeToggle = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
+  // Set theme on mount
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   return (
     <nav className="navbar">
@@ -75,10 +88,32 @@ const Navbar = () => {
 
         {/* Right Side Actions */}
         <div className="navbar-actions">
-          <button className="action-btn settings-btn">
-            <Settings className="action-icon" />
-          </button>
-          <button className="action-btn profile-btn">
+          <div className="icon-wrapper" style={{ position: 'relative' }}>
+            <button
+              className="action-btn settings-btn highlight-icon"
+              aria-label="Settings"
+              tabIndex={0}
+              onClick={() => setShowSettings((s) => !s)}
+              title="Settings"
+            >
+              <Settings className="action-icon" />
+            </button>
+            {showSettings && (
+              <div className="settings-dropdown">
+                <button className="theme-toggle-btn" onClick={handleThemeToggle}>
+                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} &nbsp;
+                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </button>
+                {/* Add more settings here if needed */}
+              </div>
+            )}
+          </div>
+          <button
+            className="action-btn profile-btn highlight-icon"
+            aria-label="Profile"
+            tabIndex={0}
+            title="Profile"
+          >
             <User className="action-icon" />
           </button>
         </div>

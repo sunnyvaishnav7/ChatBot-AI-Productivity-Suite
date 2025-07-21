@@ -1,11 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { SparklesText } from "./components/magicui/sparkles-text.jsx";
+import { AnimatePresence, motion } from 'framer-motion';
+import { Globe } from "./components/magicui/globe.jsx";
+import { AnimatedBackground } from "./components/magicui/animated-background.jsx";
 import './App.css';
 import ChatInput from './Component/ChatInput';
 import Navbar from './NavBar';
 import VideoCall from './VideoCall';
 import Notepad from './Notepad';
 import Help from './Help';
+import Ws from './ws';
 
 const fetchChatResponse = async (question) => {
   try {
@@ -109,16 +114,27 @@ function ChatPage() {
   }, [messages, loading]);
 
   return (
-    <>
-      <br /><br /><br /><br /><br />
-      {!hasChatted && (
-        <header className="ok">
-          <h1>Gemini ChatBot</h1>
-          <p>Ask me anything and I'll help you find answers</p>
-        </header>
-      )}
+    <div className="chat-page">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className={`landing-header ${hasChatted ? 'chat-active' : ''}`}
+      >
+        { !hasChatted && (
+          <div className="globe-container">
+            <Globe />
+          </div>
+        )}
+        {!hasChatted && (
+          <header className="ok">
+            <SparklesText>Gemini ChatBot</SparklesText>
+            <p>Ask me anything and I'll help you find answers</p>
+          </header>
+        )}
+      </motion.div>
 
-      <div className="container chat-scroll-container" ref={chatContainerRef}>
+      <div className={`container chat-scroll-container ${hasChatted ? 'active' : ''}`} ref={chatContainerRef}>
         <div className="chat-history">
           {messages.map((msg, idx) => (
             <div key={idx} className={`chat-message-bubble ${msg.role}`}>
@@ -127,27 +143,81 @@ function ChatPage() {
           ))}
           {loading && <div className="chat-message-bubble bot">Generating response...</div>}
         </div>
-
-        <ChatInput onSubmit={handleQuestionSubmit} disabled={loading} />
       </div>
-    </>
+      <ChatInput onSubmit={handleQuestionSubmit} disabled={loading} />
+    </div>
   );
 }
 
 function App() {
+  const location = useLocation();
   return (
-    <Router>
-      <div className="App">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<ChatPage />} />
-          <Route path="/videocall" element={<VideoCall />} />
-          <Route path="/notes" element={<Notepad />} />
-          <Route path="/help" element={<Help />} />
+    <div className="App">
+      <AnimatedBackground />
+      <Navbar />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ChatPage />
+            </motion.div>
+          } />
+          <Route path="/videocall" element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <VideoCall />
+              
+            </motion.div>
+          } />
+          <Route path="/notes" element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Notepad />
+            </motion.div>
+          } />
+          <Route path="/help" element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Help />
+            </motion.div>
+          } />
+          <Route path='/test' element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Ws />
+            </motion.div>
+          } />
         </Routes>
-      </div>
-    </Router>
+      </AnimatePresence>
+    </div>
   );
 }
 
-export default App;
+export default function AppWithRouter() {
+  return (
+    <Router>
+      <App />
+    </Router>
+  );
+}

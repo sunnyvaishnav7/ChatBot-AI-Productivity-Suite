@@ -1,14 +1,16 @@
 package com.ai.gemini_chat;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,18 +26,18 @@ public class QnAService {
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
-    private final WebClient webClient;
+    private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public QnAService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.build();
+    public QnAService() {
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(30))
+                .build();
         this.objectMapper = new ObjectMapper();
     }
 
     public String getAnswer(String question) {
         try {
-            logger.info("Sending question to Gemini API: {}", question);
-
             Map<String, Object> requestBody = Map.of(
                 "contents", new Object[] {
                     Map.of("parts", new Object[] {
@@ -44,58 +46,45 @@ public class QnAService {
                 }
             );
 
-            String url = geminiApiUrl + "?key=" + geminiApiKey;
+            String jsonBody = objectMapper.writeValueAsString(requestBody);
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(geminiApiUrl + "?key=" + geminiApiKey))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .timeout(Duration.ofSeconds(30))
+                    .build();
 
-            String response = webClient.post()
-                    .uri(url)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() != 200) {
+                logger.error("HTTP Error: {} - {}", response.statusCode(), response.body());
+                return "Error: API returned status " + response.statusCode();
+            }
 
-            logger.debug("Raw Gemini API response: {}", response);
+            return parseResponse(response.body());
 
-            return parseGeminiResponse(response);
-
-        } catch (WebClientResponseException e) {
-            logger.error("Gemini API HTTP error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("Gemini API error: " + e.getStatusCode());
         } catch (Exception e) {
-            logger.error("Unexpected error calling Gemini API", e);
-            throw new RuntimeException("Service error: " + e.getMessage());
+            logger.error("Service Error", e);
+            return "Error: Service temporarily unavailable";
         }
     }
 
-    private String parseGeminiResponse(String response) {
+    private String parseResponse(String response) {
         try {
             JsonNode root = objectMapper.readTree(response);
-
+            
             if (root.has("error")) {
-                String errorMsg = root.get("error").get("message").asText();
-                throw new RuntimeException("Gemini API error: " + errorMsg);
+                return "API Error: " + root.get("error").get("message").asText();
             }
 
-            JsonNode candidates = root.get("candidates");
-            if (candidates != null && candidates.isArray() && candidates.size() > 0) {
-                JsonNode content = candidates.get(0).get("content");
-                if (content != null) {
-                    JsonNode parts = content.get("parts");
-                    if (parts != null && parts.isArray() && parts.size() > 0) {
-                        JsonNode text = parts.get(0).get("text");
-                        if (text != null) {
-                            return text.asText();
-                        }
-                    }
-                }
-            }
-
-            throw new RuntimeException("Invalid response structure from Gemini API");
-
+            return root.get("candidates").get(0)
+                      .get("content").get("parts").get(0)
+                      .get("text").asText();
+                      
         } catch (Exception e) {
-            logger.error("Error parsing Gemini response", e);
-            throw new RuntimeException("Failed to parse Gemini response");
+            logger.error("Parse Error", e);
+            return "Error: Could not parse response";
         }
     }
 }

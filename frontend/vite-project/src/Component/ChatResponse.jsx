@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Globe } from "@/components/magicui/globe";
 import "./ChatResponse.css";
 
 const ChatResponse = ({ response, loading = false, error = null }) => {
@@ -92,7 +93,9 @@ const ChatResponse = ({ response, loading = false, error = null }) => {
   const { candidates, usageMetadata } = response;
 
   return (
+    
     <div className="chat-response-container">
+
       <div className="response-header">
         <h3 className="response-title">Response</h3>
         <div className="response-actions">

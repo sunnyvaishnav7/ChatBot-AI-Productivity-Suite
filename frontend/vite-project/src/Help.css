@@ -41,11 +41,12 @@
   border-bottom: none;
 }
 
-.help-section h2 {
-  color: #7ee787;
-  font-size: 1.25rem;
-  margin-bottom: 0.7rem;
-  margin-top: 0.5rem;
+h2 {
+  color: #9F6FFF;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
 }
 
 .help-section ul, .help-section ol {

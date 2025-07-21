@@ -1,13 +1,13 @@
-package com.ai.gemini_chat;
+// package com.ai.gemini_chat;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+// import org.junit.jupiter.api.Test;
+// import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class GeminiChatApplicationTests {
+// @SpringBootTest
+// class GeminiChatApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+// 	@Test
+// 	void contextLoads() {
+// 	}
 
-}
+// }

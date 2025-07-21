@@ -146,44 +146,75 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  width: 52px;
+  height: 52px;
+  background: rgba(159, 111, 255, 0.18);
+  border: 2px solid #9F6FFF;
+  border-radius: 16px;
+  color: #fff;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 16px rgba(159, 111, 255, 0.18), 0 0 8px #9F6FFF;
 }
 
-.action-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.action-btn:hover::before {
-  opacity: 1;
+.action-btn:focus {
+  outline: 2.5px solid #9F6FFF;
+  outline-offset: 2px;
 }
 
 .action-btn:hover {
+  background: #9F6FFF;
   color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px) scale(1.12);
+  box-shadow: 0 8px 32px #9F6FFF33, 0 0 16px #9F6FFF;
 }
 
 .action-icon {
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   z-index: 1;
+  color: #fff;
+  filter: drop-shadow(0 2px 8px #9F6FFF88);
+}
+
+/* Settings dropdown */
+.settings-dropdown {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  min-width: 170px;
+  background: #18122B;
+  border: 1.5px solid #9F6FFF;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px #9F6FFF33;
+  padding: 0.5rem 0.75rem;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: fadeIn 0.25s;
+}
+
+.theme-toggle-btn {
+  background: #9F6FFF;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+.theme-toggle-btn:hover {
+  background: #6C4DFF;
+  color: #fff;
+  transform: scale(1.05);
 }
 
 /* Mobile Menu Button */

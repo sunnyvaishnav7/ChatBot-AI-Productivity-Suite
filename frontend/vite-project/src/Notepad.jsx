@@ -232,7 +232,7 @@ const Notepad = () => {
           {/* Sidebar */}
           <div className="notes-sidebar">
             <div className="sidebar-header">
-              <h2 className="sidebar-title">Notes ({notes.length})</h2>
+              <h2 className="sidebar-title">Meeting Notes ({notes.length})</h2>
               <button 
                 onClick={() => createNote('text')} 
                 className="add-note-btn"
@@ -248,6 +248,7 @@ const Notepad = () => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="search-input"
+                spellCheck={true}
               />
             </div>
             <div className="notes-list">
@@ -331,6 +332,17 @@ const Notepad = () => {
                     value={activeNote.title}
                     onChange={e => updateNote(activeNote.id, { title: e.target.value })}
                     className="note-title-input"
+                    spellCheck={true}
+                    autoCorrect="on"
+                    onBlur={e => {
+                      // Simple demo autocorrect for common typos
+                      const corrections = { teh: 'the', recieve: 'receive', adress: 'address', seperate: 'separate', occured: 'occurred' };
+                      let value = e.target.value;
+                      Object.keys(corrections).forEach(typo => {
+                        value = value.replace(new RegExp(`\\b${typo}\\b`, 'gi'), corrections[typo]);
+                      });
+                      if (value !== e.target.value) updateNote(activeNote.id, { title: value });
+                    }}
                   />
                   {isTextMode ? (
                     <textarea
@@ -338,6 +350,17 @@ const Notepad = () => {
                       value={activeNote.content || ''}
                       onChange={e => updateNote(activeNote.id, { content: e.target.value })}
                       className="note-editor"
+                      spellCheck={true}
+                      autoCorrect="on"
+                      onBlur={e => {
+                        // Simple demo autocorrect for common typos
+                        const corrections = { teh: 'the', recieve: 'receive', adress: 'address', seperate: 'separate', occured: 'occurred' };
+                        let value = e.target.value;
+                        Object.keys(corrections).forEach(typo => {
+                          value = value.replace(new RegExp(`\\b${typo}\\b`, 'gi'), corrections[typo]);
+                        });
+                        if (value !== e.target.value) updateNote(activeNote.id, { content: value });
+                      }}
                     />
                   ) : (
                     <div
