@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { SparklesText } from "./components/magicui/sparkles-text.jsx";
 import { AnimatePresence, motion } from 'framer-motion';
 import { Globe } from "./components/magicui/globe.jsx";
@@ -149,6 +149,18 @@ function ChatPage() {
   );
 }
 
+function JoinMeetingRedirect() {
+  const { meetingId } = useParams();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (meetingId) {
+      localStorage.setItem('pendingMeetingId', meetingId);
+      navigate('/videocall');
+    }
+  }, [meetingId, navigate]);
+  return null;
+}
+
 function App() {
   const location = useLocation();
   return (
@@ -175,9 +187,9 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <VideoCall />
-              
             </motion.div>
           } />
+          <Route path="/join/:meetingId" element={<JoinMeetingRedirect />} />
           <Route path="/notes" element={
             <motion.div
               initial={{ opacity: 0, y: 20 }}
