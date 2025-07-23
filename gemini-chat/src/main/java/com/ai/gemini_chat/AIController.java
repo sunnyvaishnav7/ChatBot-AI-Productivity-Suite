@@ -19,7 +19,7 @@ import lombok.AllArgsConstructor;
 public class AIController {
 
     private static final Logger logger = LoggerFactory.getLogger(AIController.class);
-    private final QnAService qnAService;
+    private final QnAService qnAService = null;
 
     @PostMapping(value = "/ask", consumes = "application/json", produces = "application/json")
     public ResponseEntity<Map<String, Object>> askQuestion(@RequestBody Map<String, String> payload) {

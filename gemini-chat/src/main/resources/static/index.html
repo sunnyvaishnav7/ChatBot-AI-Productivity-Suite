@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Video Call</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #ffeb3b;
+            margin-bottom: 20px;
+        }
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .video-box {
+            width: 320px;
+            height: 240px;
+            background-color: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+        }
+        input {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+        }
+        button {
+            cursor: pointer;
+            background-color: #4caf50;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #777;
+            cursor: not-allowed;
+        }
+        #endCallBtn {
+            background-color: #f44336;
+        }
+        #endCallBtn:hover {
+            background-color: #d32f2f;
+        }
+        #toggleCameraBtn, #toggleMicBtn {
+            background-color: #ffeb3b;
+            color: #000;
+        }
+        #toggleCameraBtn:hover, #toggleMicBtn:hover {
+            background-color: #fbc02d;
+        }
+        #error {
+            background-color: #f44336;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebRTC Video Call</h1>
+    <div id="error"></div>
+    <div class="controls">
+        <input id="username" type="text" placeholder="Enter your username">
+        <button id="registerBtn">Register</button>
+        <input id="callTo" type="text" placeholder="Enter username to call">
+        <button id="callBtn">Call</button>
+    </div>
+    <div class="video-container">
+        <div class="video-box">
+            <video id="localVideo" autoplay muted playsinline></video>
+        </div>
+        <div class="video-box">
+            <video id="remoteVideo" autoplay playsinline></video>
+        </div>
+    </div>
+    <div class="controls">
+        <button id="endCallBtn" disabled>End Call</button>
+        <button id="toggleCameraBtn" disabled>Toggle Camera</button>
+        <button id="toggleMicBtn" disabled>Toggle Mic</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-peer/9.11.1/simple-peer.min.js"></script>
+    <script>
+        // Polyfill for global to fix randombytes issue
+        if (typeof window !== "undefined" && !window.global) {
+            window.global = window;
+        }
+
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const usernameInput = document.getElementById('username');
+        const callToInput = document.getElementById('callTo');
+        const registerBtn = document.getElementById('registerBtn');
+        const callBtn = document.getElementById('callBtn');
+        const endCallBtn = document.getElementById('endCallBtn');
+        const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+        const toggleMicBtn = document.getElementById('toggleMicBtn');
+        const errorDiv = document.getElementById('error');
+
+        let stompClient = null;
+        let peer = null;
+        let localStream = null;
+        let username = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        // Display error message
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Clear error message
+        function clearError() {
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+        }
+
+        // Connect to WebSocket
+        function connectWebSocket() {
+            const socket = new SockJS('http://localhost:8080/websocket');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, (frame) => {
+                console.log('WebSocket connected');
+                reconnectAttempts = 0;
+                clearError();
+
+                // Subscribe to call, offer, answer, and candidate messages
+                stompClient.subscribe('/user/topic/call', (message) => {
+                    const callFrom = message.body;
+                    if (confirm(`Incoming call from ${callFrom}. Accept?`)) {
+                        answerCall(callFrom);
+                    }
+                });
+
+                stompClient.subscribe('/user/topic/offer', (message) => {
+                    const data = JSON.parse(message.body);
+                    handleOffer(data);
+                });
+
+                stompClient.subscribe('/user/topic/answer', (message) => {
+                    const data = JSON.parse(message.body);
+                    handleAnswer(data);
+                });
+
+                stompClient.subscribe('/user/topic/candidate', (message) => {
+                    const data = JSON.parse(message.body);
+                    handleCandidate(data);
+                });
+            }, (error) => {
+                console.error('WebSocket error:', error);
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(connectWebSocket, Math.pow(2, reconnectAttempts) * 1000);
+                    showError(`WebSocket disconnected. Reconnecting (attempt ${reconnectAttempts})...`);
+                } else {
+                    showError('Failed to reconnect to server. Please refresh the page.');
+                }
+            });
+        }
+
+        // Get media stream
+        async function getMedia() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
+                toggleCameraBtn.disabled = false;
+                toggleMicBtn.disabled = false;
+            } catch (error) {
+                showError('Please allow camera and mic access.');
+                console.error('Media error:', error);
+            }
+        }
+
+        // Register user
+        registerBtn.addEventListener('click', () => {
+            username = usernameInput.value.trim();
+            if (!username) {
+                showError('Please enter a username.');
+                return;
+            }
+            stompClient.send('/app/addUser', {}, username);
+            registerBtn.disabled = true;
+            usernameInput.disabled = true;
+            callBtn.disabled = false;
+            connectWebSocket();
+            getMedia();
+        });
+
+        // Initiate call
+        callBtn.addEventListener('click', () => {
+            const callTo = callToInput.value.trim();
+            if (!callTo) {
+                showError('Please enter a username to call.');
+                return;
+            }
+            if (callTo === username) {
+                showError('Cannot call yourself.');
+                return;
+            }
+            stompClient.send('/app/call', {}, JSON.stringify({ callTo, callFrom: username }));
+            startCall(callTo);
+        });
+
+        // Start call (initiator)
+        async function startCall(toUser) {
+            try {
+                peer = new SimplePeer({
+                    initiator: true,
+                    trickle: true,
+                    stream: localStream,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            // Add TURN server if available
+                        ]
+                    }
+                });
+
+                peer.on('signal', (data) => {
+                    stompClient.send('/app/offer', {}, JSON.stringify({
+                        toUser,
+                        fromUser: username,
+                        offer: data
+                    }));
+                });
+
+                peer.on('stream', (remoteStream) => {
+                    remoteVideo.srcObject = remoteStream;
+                });
+
+                peer.on('error', (err) => {
+                    console.error('Peer error:', err);
+                    showError('Failed to establish video call.');
+                });
+
+                callBtn.disabled = true;
+                endCallBtn.disabled = false;
+            } catch (err) {
+                console.error('Start call error:', err);
+                showError('Failed to start call: ' + err.message);
+            }
+        }
+
+        // Answer call (non-initiator)
+        async function answerCall(fromUser) {
+            try {
+                peer = new SimplePeer({
+                    initiator: false,
+                    trickle: true,
+                    stream: localStream,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            // Add TURN server if available
+                        ]
+                    }
+                });
+
+                peer.on('signal', (data) => {
+                    stompClient.send('/app/answer', {}, JSON.stringify({
+                        toUser: fromUser,
+                        fromUser: username,
+                        answer: data
+                    }));
+                });
+
+                peer.on('stream', (remoteStream) => {
+                    remoteVideo.srcObject = remoteStream;
+                });
+
+                peer.on('error', (err) => {
+                    console.error('Peer error:', err);
+                    showError('Failed to establish video call.');
+                });
+
+                callBtn.disabled = true;
+                endCallBtn.disabled = false;
+            } catch (err) {
+                console.error('Answer call error:', err);
+                showError('Failed to answer call: ' + err.message);
+            }
+        }
+
+        // Handle offer
+        function handleOffer(data) {
+            if (data.toUser === username) {
+                peer.signal(data.offer);
+            }
+        }
+
+        // Handle answer
+        function handleAnswer(data) {
+            if (data.toUser === username) {
+                peer.signal(data.answer);
+            }
+        }
+
+        // Handle ICE candidate
+        function handleCandidate(data) {
+            if (data.toUser === username) {
+                peer.signal(data.candidate);
+            }
+        }
+
+        // End call
+        endCallBtn.addEventListener('click', () => {
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            remoteVideo.srcObject = null;
+            callBtn.disabled = false;
+            endCallBtn.disabled = true;
+        });
+
+        // Toggle camera
+        toggleCameraBtn.addEventListener('click', () => {
+            const track = localStream?.getVideoTracks()?.[0];
+            if (track) {
+                track.enabled = !track.enabled;
+            }
+        });
+
+        // Toggle mic
+        toggleMicBtn.addEventListener('click', () => {
+            const track = localStream?.getAudioTracks()?.[0];
+            if (track) {
+                track.enabled = !track.enabled;
+            }
+        });
+    </script>
+</body>
+</html>
